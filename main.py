@@ -12,7 +12,12 @@ from pdf2image import convert_from_path
 import pytesseract
 # To remove the additional created files
 import os
+
+from model import Model
+
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+
 def text_extraction(element):
     # Extracting the text from the in line text element
     line_text = element.get_text()
@@ -104,7 +109,8 @@ def image_to_text(image_path):
     # Read the image
     img = Image.open(image_path)
     # Extract the text from the image
-    text = pytesseract.image_to_string(img)
+    #text = pytesseract.image_to_string(img)
+    text = pytesseract.image_to_string(img, lang='rus')
     return text
 
 # Function to find the table for a given element
@@ -141,7 +147,7 @@ def start():
         text_from_tables = []
         page_content = []
         # Initialize the number of the examined tables
-        table_in_page= -1
+        table_in_page = -1
         # Open the pdf file
         pdf = pdfplumber.open(pdf_path)
         # Find the examined page
@@ -167,7 +173,7 @@ def start():
 
 
         # Find the elements that composed a page
-        for i,component in enumerate(page_elements):
+        for i, component in enumerate(page_elements):
             # Extract the element of the page layout
             element = component[1]
 
@@ -175,17 +181,17 @@ def start():
             if table_in_page == -1:
                 pass
             else:
-                if is_element_inside_any_table(element, page ,tables):
-                    table_found = find_table_for_element(element,page ,tables)
+                if is_element_inside_any_table(element, page, tables):
+                    table_found = find_table_for_element(element, page, tables)
                     if table_found == table_in_page and table_found != None:
                         page_content.append(text_from_tables[table_in_page])
                         page_text.append('table')
                         line_format.append('table')
-                        table_in_page+=1
+                        table_in_page += 1
                     # Pass this iteration because the content of this element was extracted from the tables
                     continue
 
-            if not is_element_inside_any_table(element,page,tables):
+            if not is_element_inside_any_table(element, page, tables):
 
                 # Check if the element is text element
                 if isinstance(element, LTTextContainer):
@@ -229,8 +235,27 @@ def start():
         os.remove('PDF_image.png')
 
     # Display the content of the page
-    result = ''.join(text_per_page['Page_1'][4])
-    print(result)
+    result = ''
+    for page in range(len(text_per_page)):
+        idx = 'Page_'+str(page)
+        s = ''.join(text_per_page[idx][4])
+        result += s
+
+    #print(result)
+
+    # Create Model
+    gigachat_model = Model()
+    gigachat_model.setReport(result)
+    gigachat_model.transform()
+    gigachat_model.create_embeddings()
+    print("Ваш вопрос, для выхода пустая строка:")
+    while True:
+        s = input()
+        if s==('q'):
+            break
+        ans = gigachat_model.getAnswer(s)
+        print(ans['result'])
+
 
 
 # Press the green button in the gutter to run the script.
