@@ -25,35 +25,29 @@ class Model:
         file.write(str(self.report))
         file.close()
         # Open text file
-        print("Open txt -------------")
         loader = TextLoader("temp.txt", encoding="utf-8")
-        print("loader --------------")
         self.documents = loader.load()
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=200,
         )
-        print("Split --------------")
         self.documents = text_splitter.split_documents(self.documents)
         print(f"Total documents: {len(self.documents)}")
 
     def create_embeddings(self):
-        print("embed 1 ---------------")
         self.embeddings = GigaChatEmbeddings(
             credentials=self.credentials, verify_ssl_certs=False
         )
-        print("embed 2 ---------------")
+
         self.db = Chroma.from_documents(
             self.documents,
             self.embeddings,
             client_settings=Settings(anonymized_telemetry=False),
         )
-        print("embed 3 ---------------")
         self.qa_chain = RetrievalQA.from_chain_type(self.chat, retriever=self.db.as_retriever())
-        print("embed 4 ---------------")
+
 
     def getAnswer(self, promt):
-        print("ans 1 ---------------")
         docs = self.db.similarity_search(promt, k=4)
         print(f"Found {len(docs)} relevant documents")
         answer = self.qa_chain({"query": promt})
