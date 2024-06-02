@@ -8,5 +8,6 @@ if __name__ == '__main__':
     app = QuestionAnswerApp(root)
     root.title('Анализ отчетов')
     root.geometry("640x480")
+    root.resizable(False, False)
     root.update()
     root.mainloop()

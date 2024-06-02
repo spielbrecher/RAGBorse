@@ -25,10 +25,11 @@ class Model:
         file.write(str(self.report))
         file.close()
         # Open text file
+        print(f"Text length {len(self.report)}")
         loader = TextLoader("temp.txt", encoding="utf-8")
         self.documents = loader.load()
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
+            chunk_size=600,
             chunk_overlap=200,
         )
         self.documents = text_splitter.split_documents(self.documents)
@@ -42,10 +43,20 @@ class Model:
         self.db = Chroma.from_documents(
             self.documents,
             self.embeddings,
-            client_settings=Settings(anonymized_telemetry=False),
+            #client_settings=Settings(anonymized_telemetry=False),
+            persist_directory="./chroma_db"
         )
+        #self.db.persist()
         self.qa_chain = RetrievalQA.from_chain_type(self.chat, retriever=self.db.as_retriever())
 
+
+    def load_chroma(self):
+        self.embeddings = GigaChatEmbeddings(
+            credentials=self.credentials, verify_ssl_certs=False
+        )
+        # load from disk
+        self.db = Chroma(persist_directory="./chroma_db", embedding_function=self.embeddings)
+        self.qa_chain = RetrievalQA.from_chain_type(self.chat, retriever=self.db.as_retriever())
 
     def getAnswer(self, promt):
         docs = self.db.similarity_search(promt, k=4)
